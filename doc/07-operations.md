@@ -36,4 +36,4 @@ Update docs in this folder whenever behavior changes in:
 - `app/sources/database/*`
 - `app/analytics/*`
 - `app/rss/*`
-- `app/internal/security.py`
+- `shared_backend/security/internal_service_auth.py`

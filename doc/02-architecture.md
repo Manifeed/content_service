@@ -53,6 +53,6 @@ Database responsibilities are split by concern:
 
 ## Error and Schema Strategy
 
-- Exceptions and handlers live under `app/errors/*`
-- API contracts live under `app/schemas/*`
-- Some contracts are mirrored in other services and should remain aligned
+- Exceptions and handlers are imported directly from `shared_backend`
+- API contracts are imported directly from `shared_backend` unless a schema has
+  service-specific behavior

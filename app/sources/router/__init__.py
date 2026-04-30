@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.internal.security import require_internal_service_token
+from shared_backend.security.internal_service_auth import require_internal_service_token
 from .source_read_router import source_read_router
 from .user_source_read_router import user_source_read_router
 

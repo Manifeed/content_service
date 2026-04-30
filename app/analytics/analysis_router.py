@@ -7,8 +7,8 @@ from app.analytics.services.analysis_service import (
     read_analysis_overview,
     read_similar_sources,
 )
-from app.internal.security import require_internal_service_token
-from app.schemas.analytics.analysis_schema import AnalysisOverviewRead, SimilarSourcesRead
+from shared_backend.security.internal_service_auth import require_internal_service_token
+from shared_backend.schemas.analytics.analysis_schema import AnalysisOverviewRead, SimilarSourcesRead
 from database import get_content_db_session
 
 

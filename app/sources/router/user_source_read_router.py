@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
 
-from app.analytics.services.analysis_service import read_similar_sources
-from app.schemas.analytics.analysis_schema import SimilarSourcesRead
-from app.schemas.sources.source_schema import UserSourceDetailRead, UserSourcePageRead
-from app.sources.services.get_user_sources import get_user_source_by_id, get_user_sources
 from database import get_content_db_session
+from app.analytics.services.analysis_service import read_similar_sources
+from app.sources.services.get_user_sources import get_user_source_by_id, get_user_sources
+
+from shared_backend.schemas.analytics.analysis_schema import SimilarSourcesRead
+from shared_backend.schemas.sources.source_schema import UserSourceDetailRead, UserSourcePageRead
 
 
 user_source_read_router = APIRouter(tags=["sources-read"])

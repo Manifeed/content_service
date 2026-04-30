@@ -75,13 +75,13 @@ Impact : aucun filet automatique ne couvre :
 
 Recommandation :
 
-- Ajouter des tests unitaires sur `app/internal/security.py`, `app/rss/services/rss_icon_service.py` et `app/analytics/services/analysis_service.py`.
+- Ajouter des tests unitaires sur `shared_backend/security/internal_service_auth.py`, `app/rss/services/rss_icon_service.py` et `app/analytics/services/analysis_service.py`.
 - Ajouter des tests d'integration HTTP sur les principales routes `/internal/content/*`.
 - Ajouter au moins une suite DB pour les lectures paginees et les details de source.
 
 ### Moyen/Eleve - `APP_ENV` peut bypasser l'auth inter-service malgre une intention stricte
 
-La meme logique que dans `admin_service` existe dans `content_service/app/internal/security.py`.
+La meme logique que dans `admin_service` existe maintenant dans `shared_backend/security/internal_service_auth.py`.
 
 Impact : un environnement non local mal configure avec `APP_ENV=dev` ou equivalent pourrait accepter des appels internes sans token.
 

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.errors.app_error import UpstreamServiceError
-from app.errors.custom_exceptions import SourceNotFoundError
+from shared_backend.errors.app_error import UpstreamServiceError
+from shared_backend.errors.custom_exceptions import SourceNotFoundError
 from app.qdrant.simple_qdrant_client import QdrantIndexingError, SimpleQdrantClient
-from app.schemas.analytics.analysis_schema import (
+from shared_backend.schemas.analytics.analysis_schema import (
     AnalysisOverviewRead,
     SimilarSourceRead,
     SimilarSourcesRead,

@@ -125,10 +125,10 @@ Current tests are limited and mainly cover source compilation.
 
 ## Docker
 
-Build:
+Build from the monorepo root:
 
 ```bash
-docker build -t manifeed-content-service -f content_service/Dockerfile content_service
+docker build -t manifeed-content-service -f content_service/Dockerfile .
 ```
 
 Run:
@@ -141,6 +141,9 @@ docker run --rm -p 8000:8000 \
 	-e QDRANT_URL='http://qdrant:6333' \
 	manifeed-content-service
 ```
+
+The runtime image is multi-stage, runs as a non-root user, and installs
+`shared_backend` from a wheel built locally from the monorepo.
 
 ## Detailed Documentation
 

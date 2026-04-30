@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.errors.custom_exceptions import SourceNotFoundError
-from app.schemas.sources.source_schema import RssSourceDetailRead
+from shared_backend.errors.custom_exceptions import SourceNotFoundError
+from shared_backend.schemas.sources.source_schema import RssSourceDetailRead
 from app.sources.database.get_sources_db_cli import get_rss_source_detail_read_by_id
 
 

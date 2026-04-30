@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.errors.custom_exceptions import RssIconNotFoundError
+from shared_backend.errors.custom_exceptions import RssIconNotFoundError
 from app.rss.domain.rss_repository_config import get_rss_feeds_repository_path
 
 

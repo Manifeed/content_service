@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
 
-from app.internal.security import require_internal_service_token
+from shared_backend.security.internal_service_auth import require_internal_service_token
 from app.rss.services.rss_icon_service import get_rss_icon_file_path
 
 

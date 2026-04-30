@@ -5,14 +5,16 @@ from datetime import datetime, timezone
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.schemas.sources.source_schema import (
+from app.utils.public_url_utils import normalize_public_http_url
+
+from shared_backend.schemas.sources.source_schema import (
     RssSourceAuthorRead,
     RssSourceDetailRead,
     RssSourceRead,
     UserSourceDetailRead,
     UserSourceRead,
 )
-from app.utils.public_url_utils import normalize_public_http_url
+
 
 SOURCE_PUBLISHED_AT_FALLBACK = datetime(1970, 1, 1, tzinfo=timezone.utc)
 SOURCE_URL_SQL = "COALESCE(NULLIF(article.canonical_url, ''), 'article://' || article.article_key)"

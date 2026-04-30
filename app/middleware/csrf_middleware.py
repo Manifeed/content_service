@@ -6,7 +6,7 @@ from urllib.parse import urlsplit
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-from app.errors.custom_exceptions import CsrfOriginDeniedError
+from shared_backend.errors.custom_exceptions import CsrfOriginDeniedError
 from app.utils.environment_utils import (
     is_development_environment,
     is_production_like_environment,

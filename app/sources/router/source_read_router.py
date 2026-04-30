@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
 
-from app.schemas.sources.source_schema import RssSourceDetailRead, RssSourcePageRead
+from database import get_content_db_session
 from app.sources.services.get_source_by_id import get_rss_source_by_id
 from app.sources.services.get_sources import get_rss_sources
-from database import get_content_db_session
+
+from shared_backend.schemas.sources.source_schema import RssSourceDetailRead, RssSourcePageRead
 
 
 source_read_router = APIRouter(tags=["sources-read"])
