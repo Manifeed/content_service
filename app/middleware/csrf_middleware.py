@@ -7,7 +7,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 from shared_backend.errors.custom_exceptions import CsrfOriginDeniedError
-from app.utils.environment_utils import (
+from shared_backend.utils.environment_utils import (
     is_development_environment,
     is_production_like_environment,
 )

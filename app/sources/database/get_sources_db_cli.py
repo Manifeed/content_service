@@ -14,6 +14,7 @@ from shared_backend.schemas.sources.source_schema import (
     UserSourceDetailRead,
     UserSourceRead,
 )
+from shared_backend.utils.datetime_utils import normalize_datetime_to_utc
 
 
 SOURCE_PUBLISHED_AT_FALLBACK = datetime(1970, 1, 1, tzinfo=timezone.utc)
@@ -434,18 +435,8 @@ def _list_company_names_by_source_ids(db: Session, *, source_ids: Sequence[int])
     return company_names_by_source_id
 
 
-def _normalize_datetime(value: datetime | None) -> datetime | None:
-    if value is None:
-        return None
-    if isinstance(value, str):
-        return datetime.fromisoformat(value.replace('Z', '+00:00'))
-    if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
-
-
 def _to_public_published_at(published_at: datetime | None) -> datetime | None:
-    normalized = _normalize_datetime(published_at)
+    normalized = normalize_datetime_to_utc(published_at)
     if normalized is None or normalized == SOURCE_PUBLISHED_AT_FALLBACK:
         return None
     return normalized
