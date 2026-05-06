@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.clients.database.source_read_database_client import list_rss_sources_read
+
 from shared_backend.schemas.sources.source_schema import RssSourcePageRead
-from app.sources.database.get_sources_db_cli import list_rss_sources_read
 
 
 def get_rss_sources(

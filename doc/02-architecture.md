@@ -2,34 +2,35 @@
 
 ## High-Level Layers
 
-- `main.py`: application bootstrap, logging, middleware, and router registration
-- `database.py`: DB URL resolution, engine creation, and session factories
-- `app/sources/router`: internal source HTTP route families
-- `app/sources/services`: source read business logic
-- `app/sources/database`: SQL read models and embedding read access
-- `app/analytics`: analysis routes and Qdrant-backed services
-- `app/rss`: RSS icon path validation and file serving
-- `app/qdrant`: low-level Qdrant client
+- `app/main.py`: internal-only application bootstrap, logging, and router registration
+- `app/database.py`: content DB URL resolution, engine creation, sessions, and readiness check
+- `app/routers/internal_content_router.py`: single internal router assembly
+- `app/routers`: internal source and analysis HTTP route families
+- `app/services`: source read, analysis, and readiness orchestration
+- `app/clients/database`: SQL read models and embedding read access
+- `app/clients/qdrant`: low-level Qdrant client
+- `app/domain`: content identity, embedding, and RSS repository configuration
+- `app/utils`: stateless helper functions
 
 ## Route Layer
 
 Main route families:
 
 - `/internal/health`: simple liveness endpoint
+- `/internal/ready`: strict readiness endpoint for token, content DB, and Qdrant checks
 - `/internal/content/admin/sources...`: admin-oriented source reads
 - `/internal/content/sources...`: user-oriented source reads
 - `/internal/content/analysis...`: analysis overview and similar-source lookup
-- `/internal/content/rss/img/...`: RSS icon file reads
 
 ## Business Layer
 
 Key service modules:
 
-- `app/sources/services/get_sources.py`
-- `app/sources/services/get_user_sources.py`
-- `app/sources/services/get_source_by_id.py`
-- `app/analytics/services/analysis_service.py`
-- `app/rss/services/rss_icon_service.py`
+- `app/services/source_admin_service.py`
+- `app/services/source_user_service.py`
+- `app/services/source_detail_service.py`
+- `app/services/analysis_service.py`
+- `app/services/readiness_service.py`
 
 These modules keep the route layer thin and isolate SQL/Qdrant behavior from
 FastAPI request handling.
@@ -38,13 +39,13 @@ FastAPI request handling.
 
 Database responsibilities are split by concern:
 
-- `database.py`: session factories
-- `app/sources/database/get_sources_db_cli.py`: source list/detail read SQL
-- `app/sources/database/article_embedding_db_client.py`: embedding metadata SQL
+- `app/database.py`: content session factories and content DB readiness
+- `app/clients/database/source_read_database_client.py`: source list/detail read SQL
+- `app/clients/database/article_embedding_database_client.py`: embedding metadata SQL
 
 ## Qdrant Integration Layer
 
-`app/qdrant/simple_qdrant_client.py` encapsulates:
+`app/clients/qdrant/content_qdrant_client.py` encapsulates:
 
 - collection naming and optional API key handling
 - point reads and scrolls

@@ -7,7 +7,7 @@ import hashlib
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.sources.domain.source_identity import normalize_source_url
+from app.domain.source_identity import normalize_source_url
 
 
 @dataclass(frozen=True)

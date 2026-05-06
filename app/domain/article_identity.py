@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime
 import hashlib
 import re
 import unicodedata
-from collections.abc import Sequence
 
-from .source_identity import normalize_source_url
+from app.domain.source_identity import normalize_source_url
 
 
 def normalize_article_identity_text(value: str | None) -> str | None:

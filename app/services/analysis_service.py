@@ -2,27 +2,28 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.clients.qdrant.content_qdrant_client import QdrantIndexingError, ContentQdrantClient
+from app.clients.database.article_embedding_database_client import (
+    count_indexed_embeddings,
+    get_article_key_by_id,
+)
+from app.clients.database.source_read_database_client import (
+    count_sources,
+    get_user_source_detail_read_by_id,
+)
+from app.domain.source_embedding_config import resolve_source_embedding_worker_version
+
 from shared_backend.errors.app_error import UpstreamServiceError
 from shared_backend.errors.custom_exceptions import SourceNotFoundError
-from app.qdrant.simple_qdrant_client import QdrantIndexingError, SimpleQdrantClient
 from shared_backend.schemas.analytics.analysis_schema import (
     AnalysisOverviewRead,
     SimilarSourceRead,
     SimilarSourcesRead,
 )
-from app.sources.database.article_embedding_db_client import (
-    count_indexed_embeddings,
-    get_article_key_by_id,
-)
-from app.sources.database.get_sources_db_cli import (
-    count_sources,
-    get_user_source_detail_read_by_id,
-)
-from app.sources.domain.source_embedding_config import resolve_source_embedding_worker_version
 
 
 def read_analysis_overview(db: Session) -> AnalysisOverviewRead:
-    qdrant_client = SimpleQdrantClient()
+    qdrant_client = ContentQdrantClient()
     return AnalysisOverviewRead(
         total_sources=count_sources(db),
         indexed_embeddings=count_indexed_embeddings(db),
@@ -46,7 +47,7 @@ def read_similar_sources(
 
     resolved_worker_version = worker_version or resolve_source_embedding_worker_version()
     try:
-        points = SimpleQdrantClient().search_similar_article_embeddings(
+        points = ContentQdrantClient().search_similar_article_embeddings(
             article_key=article_key,
             worker_version=resolved_worker_version,
             limit=limit + 1,

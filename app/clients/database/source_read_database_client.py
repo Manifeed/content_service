@@ -5,8 +5,6 @@ from datetime import datetime, timezone
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.utils.public_url_utils import normalize_public_http_url
-
 from shared_backend.schemas.sources.source_schema import (
     RssSourceAuthorRead,
     RssSourceDetailRead,
@@ -15,6 +13,7 @@ from shared_backend.schemas.sources.source_schema import (
     UserSourceRead,
 )
 from shared_backend.utils.datetime_utils import normalize_datetime_to_utc
+from shared_backend.utils.public_url import normalize_public_http_url
 
 
 SOURCE_PUBLISHED_AT_FALLBACK = datetime(1970, 1, 1, tzinfo=timezone.utc)

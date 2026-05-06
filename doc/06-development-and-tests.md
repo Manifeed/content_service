@@ -19,13 +19,12 @@ Optional dependencies:
 
 ```bash
 export QDRANT_URL=http://localhost:6333
-export RSS_FEEDS_REPOSITORY_PATH=var/rss_feeds
 ```
 
 Run the service:
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ## Docker
@@ -55,7 +54,8 @@ Run all tests:
 pytest -q
 ```
 
-Current automated coverage is minimal and mainly validates source compilation.
+Current automated coverage validates source compilation, the internal app
+bootstrap, readiness, and the shared content-service networking client.
 
 Recommended next tests:
 

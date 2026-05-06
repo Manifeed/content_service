@@ -5,7 +5,7 @@ from datetime import datetime
 from uuid import NAMESPACE_URL, uuid5
 import httpx
 
-from app.sources.domain.source_embedding_config import (
+from app.domain.source_embedding_config import (
     resolve_qdrant_api_key,
     resolve_qdrant_collection_name,
     resolve_qdrant_url,
@@ -56,7 +56,7 @@ class QdrantScoredArticleEmbeddingPointRead:
     worker_version: str | None
 
 
-class SimpleQdrantClient:
+class ContentQdrantClient:
     def __init__(self, http_client: httpx.Client | None = None) -> None:
         self.base_url = resolve_qdrant_url()
         self.collection_name = resolve_qdrant_collection_name()
@@ -317,6 +317,10 @@ class SimpleQdrantClient:
             )
             for point in points
         ]
+
+    def check_ready(self) -> None:
+        response = self._request(method="GET", path="/collections")
+        self._require_qdrant_success(response, "Unable to read Qdrant collections")
 
     def _ensure_collection(
         self,

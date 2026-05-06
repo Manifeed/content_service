@@ -3,13 +3,14 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.analytics.services.analysis_service import (
+from app.database import get_content_read_db_session
+from app.services.analysis_service import (
     read_analysis_overview,
     read_similar_sources,
 )
+
 from shared_backend.security.internal_service_auth import require_internal_service_token
 from shared_backend.schemas.analytics.analysis_schema import AnalysisOverviewRead, SimilarSourcesRead
-from database import get_content_db_session
 
 
 analysis_router = APIRouter(
@@ -21,7 +22,7 @@ analysis_router = APIRouter(
 
 @analysis_router.get("/overview", response_model=AnalysisOverviewRead)
 def read_analysis_overview_route(
-    db: Session = Depends(get_content_db_session),
+    db: Session = Depends(get_content_read_db_session),
 ) -> AnalysisOverviewRead:
     return read_analysis_overview(db)
 
@@ -31,7 +32,7 @@ def read_similar_sources_route(
     source_id: int = Query(ge=1),
     limit: int = Query(default=10, ge=1, le=20),
     worker_version: str | None = Query(default=None, min_length=1, max_length=80),
-    db: Session = Depends(get_content_db_session),
+    db: Session = Depends(get_content_read_db_session),
 ) -> SimilarSourcesRead:
     return read_similar_sources(
         db,
