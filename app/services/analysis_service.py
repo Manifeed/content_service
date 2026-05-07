@@ -3,15 +3,12 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.clients.qdrant.content_qdrant_client import QdrantIndexingError, ContentQdrantClient
-from app.clients.database.article_embedding_database_client import (
-    count_indexed_embeddings,
-    get_article_key_by_id,
-)
+from app.clients.database.article_embedding_database_client import count_indexed_embeddings
 from app.clients.database.source_read_database_client import (
     count_sources,
     get_user_source_detail_read_by_id,
 )
-from app.domain.source_embedding_config import resolve_source_embedding_worker_version
+from app.domain.source_embedding_config import resolve_source_embedding_model_name
 
 from shared_backend.errors.app_error import UpstreamServiceError
 from shared_backend.errors.custom_exceptions import SourceNotFoundError
@@ -36,20 +33,14 @@ def read_similar_sources(
     *,
     source_id: int,
     limit: int,
-    worker_version: str | None = None,
 ) -> SimilarSourcesRead:
     source = get_user_source_detail_read_by_id(db, source_id)
     if source is None:
         raise SourceNotFoundError()
-    article_key = get_article_key_by_id(db, article_id=source_id)
-    if article_key is None:
-        raise SourceNotFoundError()
 
-    resolved_worker_version = worker_version or resolve_source_embedding_worker_version()
     try:
         points = ContentQdrantClient().search_similar_article_embeddings(
-            article_key=article_key,
-            worker_version=resolved_worker_version,
+            article_id=source_id,
             limit=limit + 1,
         )
     except QdrantIndexingError as exception:
@@ -73,6 +64,6 @@ def read_similar_sources(
 
     return SimilarSourcesRead(
         source_id=source_id,
-        worker_version=resolved_worker_version,
+        model_name=resolve_source_embedding_model_name(),
         items=items,
     )

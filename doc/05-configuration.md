@@ -30,11 +30,15 @@ Notes:
 - `QDRANT_API_KEY`
 	- optional
 
-- `SOURCE_EMBEDDING_WORKER_VERSION`
-	- default: `e5-large-v1`
-
 - `SOURCE_EMBEDDING_DIMENSIONS`
-	- optional integer override
+	- optional integer override; default BGE-M3 dense dimension is `1024`
+
+- `EMBEDDING_SERVICE_URL`
+	- default: `http://embedding_service:8000`
+	- internal service used for BGE-M3 query embeddings
+
+- `SOURCE_SEARCH_RECENCY_HALFLIFE_DAYS`
+	- default: `14`
 
 ## Database Pool Variables
 

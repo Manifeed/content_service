@@ -80,7 +80,6 @@ Returns similar sources for a given source ID.
 Parameters:
 
 - `limit`
-- `worker_version` (optional override)
 
 ## Analysis Endpoints
 
@@ -100,7 +99,6 @@ Parameters:
 
 - `source_id`
 - `limit`
-- `worker_version`
 
 ## Runtime Flows
 

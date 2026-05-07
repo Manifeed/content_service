@@ -31,12 +31,10 @@ def read_analysis_overview_route(
 def read_similar_sources_route(
     source_id: int = Query(ge=1),
     limit: int = Query(default=10, ge=1, le=20),
-    worker_version: str | None = Query(default=None, min_length=1, max_length=80),
     db: Session = Depends(get_content_read_db_session),
 ) -> SimilarSourcesRead:
     return read_similar_sources(
         db,
         source_id=source_id,
         limit=limit,
-        worker_version=worker_version,
     )

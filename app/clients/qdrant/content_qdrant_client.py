@@ -23,7 +23,7 @@ class QdrantArticleEmbeddingPointRead:
     point_id: str
     article_id: int | None
     article_key: str
-    worker_version: str
+    model_name: str
     company_id: int | None
     company: str | None
     language: str | None
@@ -44,7 +44,7 @@ class QdrantArticleEmbeddingPointSummaryRead:
     point_id: str
     article_id: int | None
     article_key: str | None
-    worker_version: str | None
+    model_name: str | None
 
 
 @dataclass(frozen=True)
@@ -53,7 +53,8 @@ class QdrantScoredArticleEmbeddingPointRead:
     score: float
     article_id: int | None
     article_key: str | None
-    worker_version: str | None
+    model_name: str | None
+    published_at: datetime | None = None
 
 
 class ContentQdrantClient:
@@ -92,7 +93,7 @@ class ContentQdrantClient:
         payload = {
             "article_id": article_id,
             "article_key": article_key,
-            "worker_version": worker_version,
+            "model_name": worker_version,
             "url": url,
             "title": title,
             "summary": summary,
@@ -166,7 +167,7 @@ class ContentQdrantClient:
                 else None
             ),
             article_key=str(payload.get("article_key") or article_key),
-            worker_version=str(payload.get("worker_version") or worker_version),
+            model_name=str(payload.get("model_name") or payload.get("worker_version") or worker_version),
             company_id=(
                 int(payload["company_id"])
                 if payload.get("company_id") is not None
@@ -261,9 +262,9 @@ class ContentQdrantClient:
                     if payload.get("article_key") is not None
                     else None
                 ),
-                worker_version=(
-                    str(payload["worker_version"])
-                    if payload.get("worker_version") is not None
+                model_name=(
+                    str(payload["model_name"])
+                    if payload.get("model_name") is not None
                     else None
                 ),
             )
@@ -275,19 +276,15 @@ class ContentQdrantClient:
     def search_similar_article_embeddings(
         self,
         *,
-        article_key: str,
-        worker_version: str,
+        article_id: int,
         limit: int,
     ) -> list[QdrantScoredArticleEmbeddingPointRead]:
-        point_id = build_article_embedding_point_id(
-            article_key=article_key,
-            worker_version=worker_version,
-        )
         response = self._request(
             method="POST",
             path=f"/collections/{self.collection_name}/points/recommend",
             json={
-                "positive": [point_id],
+                "positive": [article_id],
+                "using": "dense",
                 "limit": max(1, int(limit)),
                 "with_payload": True,
                 "with_vector": False,
@@ -309,11 +306,126 @@ class ContentQdrantClient:
                     if payload.get("article_key") is not None
                     else None
                 ),
-                worker_version=(
-                    str(payload["worker_version"])
-                    if payload.get("worker_version") is not None
+                model_name=(
+                    str(payload["model_name"])
+                    if payload.get("model_name") is not None
                     else None
                 ),
+                published_at=_parse_qdrant_datetime(payload.get("published_at")),
+            )
+            for point in points
+        ]
+
+    def search_sparse_article_embeddings(
+        self,
+        *,
+        sparse_indices: list[int],
+        sparse_values: list[float],
+        limit: int,
+        language: str | None = None,
+        company_id: int | None = None,
+        author_id: int | None = None,
+        published_from: datetime | None = None,
+        published_to: datetime | None = None,
+    ) -> list[QdrantScoredArticleEmbeddingPointRead]:
+        return self._search_named_article_embeddings(
+            vector_name="sparse",
+            vector={
+                "indices": sparse_indices,
+                "values": sparse_values,
+            },
+            limit=limit,
+            language=language,
+            company_id=company_id,
+            author_id=author_id,
+            published_from=published_from,
+            published_to=published_to,
+        )
+
+    def search_dense_article_embeddings(
+        self,
+        *,
+        dense_vector: list[float],
+        limit: int,
+        article_ids: list[int] | None = None,
+        language: str | None = None,
+        company_id: int | None = None,
+        author_id: int | None = None,
+        published_from: datetime | None = None,
+        published_to: datetime | None = None,
+    ) -> list[QdrantScoredArticleEmbeddingPointRead]:
+        return self._search_named_article_embeddings(
+            vector_name="dense",
+            vector=dense_vector,
+            limit=limit,
+            article_ids=article_ids,
+            language=language,
+            company_id=company_id,
+            author_id=author_id,
+            published_from=published_from,
+            published_to=published_to,
+        )
+
+    def _search_named_article_embeddings(
+        self,
+        *,
+        vector_name: str,
+        vector: dict[str, list[int] | list[float]] | list[float],
+        limit: int,
+        article_ids: list[int] | None = None,
+        language: str | None = None,
+        company_id: int | None = None,
+        author_id: int | None = None,
+        published_from: datetime | None = None,
+        published_to: datetime | None = None,
+    ) -> list[QdrantScoredArticleEmbeddingPointRead]:
+        payload: dict[str, object] = {
+            "vector": {
+                "name": vector_name,
+                "vector": vector,
+            },
+            "limit": max(1, int(limit)),
+            "with_payload": True,
+            "with_vector": False,
+        }
+        filter_payload = build_qdrant_source_search_filter(
+            article_ids=article_ids,
+            language=language,
+            company_id=company_id,
+            author_id=author_id,
+            published_from=published_from,
+            published_to=published_to,
+        )
+        if filter_payload is not None:
+            payload["filter"] = filter_payload
+
+        response = self._request(
+            method="POST",
+            path=f"/collections/{self.collection_name}/points/search",
+            json=payload,
+        )
+        self._require_qdrant_success(response, "Unable to search embedding points")
+        points = response.json().get("result") or []
+        return [
+            QdrantScoredArticleEmbeddingPointRead(
+                point_id=str(point.get("id")),
+                score=float(point.get("score") or 0.0),
+                article_id=(
+                    int(payload["article_id"])
+                    if isinstance((payload := point.get("payload") or {}).get("article_id"), int)
+                    else None
+                ),
+                article_key=(
+                    str(payload["article_key"])
+                    if payload.get("article_key") is not None
+                    else None
+                ),
+                model_name=(
+                    str(payload["model_name"])
+                    if payload.get("model_name") is not None
+                    else None
+                ),
+                published_at=_parse_qdrant_datetime(payload.get("published_at")),
             )
             for point in points
         ]
@@ -341,9 +453,14 @@ class ContentQdrantClient:
                 path=f"/collections/{self.collection_name}",
                 json={
                     "vectors": {
-                        "size": dimensions,
-                        "distance": "Cosine",
-                    }
+                        "dense": {
+                            "size": dimensions,
+                            "distance": "Cosine",
+                        },
+                    },
+                    "sparse_vectors": {
+                        "sparse": {},
+                    },
                 },
             )
             self._require_qdrant_success(
@@ -359,7 +476,8 @@ class ContentQdrantClient:
         config = payload.get("config", {})
         params = config.get("params", {})
         vectors = params.get("vectors", {})
-        remote_dimensions = int(vectors.get("size") or 0)
+        dense_config = vectors.get("dense") if isinstance(vectors, dict) else {}
+        remote_dimensions = int((dense_config or {}).get("size") or vectors.get("size") or 0)
         if remote_dimensions != dimensions:
             raise QdrantIndexingError(
                 "Qdrant collection dimension mismatch: "
@@ -381,9 +499,14 @@ class ContentQdrantClient:
             path=f"/collections/{self.collection_name}",
             json={
                 "vectors": {
-                    "size": dimensions,
-                    "distance": "Cosine",
-                }
+                    "dense": {
+                        "size": dimensions,
+                        "distance": "Cosine",
+                    },
+                },
+                "sparse_vectors": {
+                    "sparse": {},
+                },
             },
         )
         self._require_qdrant_success(create_response, "Unable to recreate Qdrant collection")
@@ -468,3 +591,45 @@ def build_article_embedding_point_id(
             f"{article_key}:{worker_version}",
         )
     )
+
+
+def build_qdrant_source_search_filter(
+    *,
+    article_ids: list[int] | None = None,
+    language: str | None,
+    company_id: int | None,
+    author_id: int | None,
+    published_from: datetime | None,
+    published_to: datetime | None,
+) -> dict[str, list[dict[str, object]]] | None:
+    must_conditions: list[dict[str, object]] = []
+    if article_ids:
+        must_conditions.append({"has_id": sorted({int(article_id) for article_id in article_ids})})
+    if language:
+        must_conditions.append({"key": "language", "match": {"value": language}})
+    if company_id is not None:
+        must_conditions.append({"key": "company_id", "match": {"value": company_id}})
+    if author_id is not None:
+        must_conditions.append({"key": "author_ids", "match": {"value": author_id}})
+    range_filter: dict[str, str] = {}
+    if published_from is not None:
+        range_filter["gte"] = published_from.isoformat()
+    if published_to is not None:
+        range_filter["lte"] = published_to.isoformat()
+    if range_filter:
+        must_conditions.append({"key": "published_at", "range": range_filter})
+    if not must_conditions:
+        return None
+    return {"must": must_conditions}
+
+
+def _parse_qdrant_datetime(value: object) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed
+    return parsed
