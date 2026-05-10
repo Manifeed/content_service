@@ -162,77 +162,20 @@ def list_user_sources_read(
     ], total
 
 
-def list_user_source_lexical_search_candidates(
-    db: Session,
-    *,
-    query: str,
-    limit: int,
-    language: str | None,
-    publisher_id: int | None,
-    author_id: int | None,
-    published_from: datetime | None,
-    published_to: datetime | None,
-) -> list[SourceSearchCandidateRead]:
-    normalized_query = query.strip()
-    if not normalized_query:
-        return []
-
-    filters, params = _build_source_search_filters(
-        language=language,
-        publisher_id=publisher_id,
-        author_id=author_id,
-        published_from=published_from,
-        published_to=published_to,
-    )
-    filters.append(
-        """
-        to_tsvector('simple', COALESCE(article.title, '') || ' ' || COALESCE(article.summary, ''))
-            @@ plainto_tsquery('simple', :query)
-        """
-    )
-    params["query"] = normalized_query
-    where_sql = "WHERE " + " AND ".join(filters)
-    rows = (
-        db.execute(
-            text(  # nosec
-                f"""
-                SELECT
-                    article.article_id,
-                    article.published_at,
-                    ts_rank_cd(
-                        to_tsvector('simple', COALESCE(article.title, '') || ' ' || COALESCE(article.summary, '')),
-                        plainto_tsquery('simple', :query)
-                    ) AS score
-                FROM articles AS article
-                {where_sql}
-                ORDER BY score DESC, article.published_at DESC NULLS LAST, article.article_id DESC
-                LIMIT :limit
-                """
-            ),
-            {**params, "limit": limit},
-        )
-        .mappings()
-        .all()
-    )
-    return [_to_source_search_candidate(row) for row in rows]
-
-
 def list_user_source_filtered_search_candidates(
     db: Session,
     *,
     limit: int,
-    language: str | None,
-    publisher_id: int | None,
+    country: str | None,
+    company_id: int | None,
     author_id: int | None,
     published_from: datetime | None,
-    published_to: datetime | None,
 ) -> list[SourceSearchCandidateRead]:
     filters, params = _build_source_search_filters(
-        language=language,
-        publisher_id=publisher_id,
+        country=country,
+        company_id=company_id,
         author_id=author_id,
         published_from=published_from,
-        published_to=published_to,
     )
     where_sql = ""
     if filters:
@@ -314,38 +257,6 @@ def count_sources(db: Session) -> int:
         ).scalar_one()
         or 0
     )
-
-
-def resolve_source_publisher_id_by_name(db: Session, *, publisher_name: str) -> int | None:
-    normalized_name = _normalize_lookup_value(publisher_name)
-    if not normalized_name:
-        return None
-    row = (
-        db.execute(
-            text(
-                """
-                SELECT company.id
-                FROM rss_company AS company
-                WHERE lower(company.name) = lower(:publisher_name)
-                    OR company.name ILIKE :publisher_like
-                ORDER BY
-                    CASE WHEN lower(company.name) = lower(:publisher_name) THEN 0 ELSE 1 END,
-                    length(company.name) ASC,
-                    company.id ASC
-                LIMIT 1
-                """
-            ),
-            {
-                "publisher_name": publisher_name.strip(),
-                "publisher_like": f"%{publisher_name.strip()}%",
-            },
-        )
-        .mappings()
-        .first()
-    )
-    if row is None:
-        return None
-    return int(row["id"])
 
 
 def resolve_source_author_id_by_name(db: Session, *, author_name: str) -> int | None:
@@ -557,34 +468,33 @@ def _build_source_filters(
 
 def _build_source_search_filters(
     *,
-    language: str | None,
-    publisher_id: int | None,
+    country: str | None,
+    company_id: int | None,
     author_id: int | None,
     published_from: datetime | None,
-    published_to: datetime | None,
 ) -> tuple[list[str], dict[str, object]]:
     filters: list[str] = []
     params: dict[str, object] = {}
-    if language:
-        filters.append("article.language = :language")
-        params["language"] = language
-    if publisher_id is not None:
+    if country:
+        filters.append("article.country = :country")
+        params["country"] = country
+    if company_id is not None:
         filters.append(
             """
             (
-                article.company_id = :publisher_id
+                article.company_id = :company_id
                 OR EXISTS (
                     SELECT 1
                     FROM article_feed_links AS link
                     JOIN rss_feeds AS feed
                         ON feed.id = link.feed_id
                     WHERE link.article_id = article.article_id
-                        AND feed.company_id = :publisher_id
+                        AND feed.company_id = :company_id
                 )
             )
             """
         )
-        params["publisher_id"] = publisher_id
+        params["company_id"] = company_id
     if author_id is not None:
         filters.append(
             """
@@ -600,9 +510,6 @@ def _build_source_search_filters(
     if published_from is not None:
         filters.append("article.published_at >= :published_from")
         params["published_from"] = published_from
-    if published_to is not None:
-        filters.append("article.published_at <= :published_to")
-        params["published_to"] = published_to
     return filters, params
 
 

@@ -26,7 +26,7 @@ class QdrantArticleEmbeddingPointRead:
     model_name: str
     company_id: int | None
     company: str | None
-    language: str | None
+    country: str
     published_at: str | None
     url: str | None
     title: str | None
@@ -76,7 +76,7 @@ class ContentQdrantClient:
         summary: str | None,
         company_id: int | None,
         company: str | None,
-        language: str | None,
+        country: str | None,
         published_at: datetime | None,
         feed_ids: list[int],
         feeds: list[dict],
@@ -99,7 +99,7 @@ class ContentQdrantClient:
             "summary": summary,
             "company_id": company_id,
             "company": company,
-            "language": language,
+            "country": _normalize_country(country),
             "published_at": (
                 published_at.isoformat()
                 if published_at is not None
@@ -173,11 +173,7 @@ class ContentQdrantClient:
                 if payload.get("company_id") is not None
                 else None
             ),
-            language=(
-                str(payload["language"])
-                if payload.get("language") is not None
-                else None
-            ),
+            country=_normalize_country(payload.get("country")),
             published_at=(
                 str(payload["published_at"])
                 if payload.get("published_at") is not None
@@ -322,11 +318,10 @@ class ContentQdrantClient:
         sparse_indices: list[int],
         sparse_values: list[float],
         limit: int,
-        language: str | None = None,
+        country: str | None = None,
         company_id: int | None = None,
         author_id: int | None = None,
         published_from: datetime | None = None,
-        published_to: datetime | None = None,
     ) -> list[QdrantScoredArticleEmbeddingPointRead]:
         return self._search_named_article_embeddings(
             vector_name="sparse",
@@ -335,11 +330,10 @@ class ContentQdrantClient:
                 "values": sparse_values,
             },
             limit=limit,
-            language=language,
+            country=country,
             company_id=company_id,
             author_id=author_id,
             published_from=published_from,
-            published_to=published_to,
         )
 
     def search_dense_article_embeddings(
@@ -348,22 +342,20 @@ class ContentQdrantClient:
         dense_vector: list[float],
         limit: int,
         article_ids: list[int] | None = None,
-        language: str | None = None,
+        country: str | None = None,
         company_id: int | None = None,
         author_id: int | None = None,
         published_from: datetime | None = None,
-        published_to: datetime | None = None,
     ) -> list[QdrantScoredArticleEmbeddingPointRead]:
         return self._search_named_article_embeddings(
             vector_name="dense",
             vector=dense_vector,
             limit=limit,
             article_ids=article_ids,
-            language=language,
+            country=country,
             company_id=company_id,
             author_id=author_id,
             published_from=published_from,
-            published_to=published_to,
         )
 
     def _search_named_article_embeddings(
@@ -373,11 +365,10 @@ class ContentQdrantClient:
         vector: dict[str, list[int] | list[float]] | list[float],
         limit: int,
         article_ids: list[int] | None = None,
-        language: str | None = None,
+        country: str | None = None,
         company_id: int | None = None,
         author_id: int | None = None,
         published_from: datetime | None = None,
-        published_to: datetime | None = None,
     ) -> list[QdrantScoredArticleEmbeddingPointRead]:
         payload: dict[str, object] = {
             "vector": {
@@ -390,11 +381,10 @@ class ContentQdrantClient:
         }
         filter_payload = build_qdrant_source_search_filter(
             article_ids=article_ids,
-            language=language,
+            country=country,
             company_id=company_id,
             author_id=author_id,
             published_from=published_from,
-            published_to=published_to,
         )
         if filter_payload is not None:
             payload["filter"] = filter_payload
@@ -515,7 +505,7 @@ class ContentQdrantClient:
 
     def _ensure_payload_indexes(self) -> None:
         for field_name, field_schema in (
-            ("language", "keyword"),
+            ("country", "keyword"),
             ("published_at", "datetime"),
             ("feed_ids", "integer"),
             ("company_id", "integer"),
@@ -596,17 +586,16 @@ def build_article_embedding_point_id(
 def build_qdrant_source_search_filter(
     *,
     article_ids: list[int] | None = None,
-    language: str | None,
+    country: str | None,
     company_id: int | None,
     author_id: int | None,
     published_from: datetime | None,
-    published_to: datetime | None,
 ) -> dict[str, list[dict[str, object]]] | None:
     must_conditions: list[dict[str, object]] = []
     if article_ids:
         must_conditions.append({"has_id": sorted({int(article_id) for article_id in article_ids})})
-    if language:
-        must_conditions.append({"key": "language", "match": {"value": language}})
+    if country:
+        must_conditions.append({"key": "country", "match": {"value": country}})
     if company_id is not None:
         must_conditions.append({"key": "company_id", "match": {"value": company_id}})
     if author_id is not None:
@@ -614,8 +603,6 @@ def build_qdrant_source_search_filter(
     range_filter: dict[str, str] = {}
     if published_from is not None:
         range_filter["gte"] = published_from.isoformat()
-    if published_to is not None:
-        range_filter["lte"] = published_to.isoformat()
     if range_filter:
         must_conditions.append({"key": "published_at", "range": range_filter})
     if not must_conditions:
@@ -633,3 +620,10 @@ def _parse_qdrant_datetime(value: object) -> datetime | None:
     if parsed.tzinfo is None:
         return parsed
     return parsed
+
+
+def _normalize_country(value: object) -> str:
+    if value is None:
+        return "xx"
+    normalized = str(value).strip().casefold()[:2]
+    return normalized or "xx"

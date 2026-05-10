@@ -102,3 +102,14 @@ def test_internal_router_serves_source_search(content_app) -> None:
     assert response.json()["raw_query"] == "finance"
     assert response.json()["limit"] == 12
     assert response.json()["offset"] == 6
+
+
+def test_internal_source_search_rejects_removed_language_filter(content_app) -> None:
+    with TestClient(content_app) as client:
+        response = client.get(
+            "/internal/content/sources/search",
+            params={"q": "finance", "language": "fr"},
+            headers={"x-manifeed-internal-token": "x" * 32},
+        )
+
+    assert response.status_code == 422
