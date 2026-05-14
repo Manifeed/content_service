@@ -8,7 +8,6 @@
 - `CONTENT_DATABASE_URL`
 - `CONTENT_READ_DATABASE_URL`
 - `DATABASE_URL`
-- `IDENTITY_DATABASE_URL`
 - `REQUIRE_EXPLICIT_DATABASE_URLS`
 - `INTERNAL_SERVICE_TOKEN`
 - `REQUIRE_INTERNAL_SERVICE_TOKEN`
@@ -17,8 +16,8 @@ Notes:
 
 - `CONTENT_DATABASE_URL` falls back to `CONTENT_READ_DATABASE_URL`
 - if still unset, it falls back to `DATABASE_URL`
-- an identity DB engine is currently initialized even though the main exposed
-  routes are content-oriented
+- `content_service` only initializes the content database; identity data stays
+  behind the identity/user services
 
 ## Qdrant / Analysis Variables
 
@@ -31,28 +30,18 @@ Notes:
 - `QDRANT_API_KEY`
 	- optional
 
-- `SOURCE_EMBEDDING_WORKER_VERSION`
-	- default: `e5-large-v1`
-
 - `SOURCE_EMBEDDING_DIMENSIONS`
-	- optional integer override
+	- optional integer override; default BGE-M3 dense dimension is `1024`
 
-## RSS Repository Variables
+- `BGE_M3_INFERENCE_URL`
+	- default: `http://bge-m3_inference:8000`
+	- internal service used for BGE-M3 query embeddings
 
-- `RSS_FEEDS_REPOSITORY_URL`
-	- default: `https://github.com/Manifeed/rss_feed`
+- `BGE_M3_INFERENCE_API_KEY`
+	- canonical API key for the inference service
 
-- `RSS_FEEDS_REPOSITORY_BRANCH`
-	- default: `main`
-
-- `RSS_FEEDS_REPOSITORY_PATH`
-	- default: `var/rss_feeds`
-
-## HTTP / Browser-Related Variables
-
-- `CORS_ORIGINS`
-- `CSRF_TRUSTED_ORIGINS`
-- `CSRF_TRUST_SELF_ORIGIN`
+- `SOURCE_SEARCH_RECENCY_HALFLIFE_DAYS`
+	- default: `14`
 
 ## Database Pool Variables
 

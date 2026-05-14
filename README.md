@@ -2,7 +2,7 @@
 
 `content_service` is the internal read-oriented content service for Manifeed.
 It exposes backend-only FastAPI endpoints for source reads, source detail
-queries, Qdrant-backed similar-source lookups, and RSS icon file reads.
+queries, and Qdrant-backed similar-source lookups.
 
 This service is intended for trusted internal consumers such as `public_api`,
 not for browsers or public clients directly.
@@ -14,18 +14,19 @@ not for browsers or public clients directly.
 - Source detail reads
 - Analysis overview for indexed embeddings
 - Similar-source lookup through Qdrant
-- RSS icon SVG reads from the local RSS repository
 - Internal token gate (`x-manifeed-internal-token`) on exposed routers
 
 ## Architecture Overview
 
-- `app/sources/router`: internal content route families
-- `app/sources/services`: source read business layer
-- `app/sources/database`: SQL read models for sources and embeddings
-- `app/analytics`: analysis overview and Qdrant similarity routes
-- `app/rss`: RSS icon path validation and file serving
-- `app/qdrant`: low-level Qdrant client
-- `database.py`: SQLAlchemy engine and session factories
+- `app/main.py`: FastAPI bootstrap for the internal-only service
+- `app/routers/internal_content_router.py`: single internal router assembly
+- `app/database.py`: content database engine, sessions, and readiness check
+- `app/routers`: internal route families grouped by feature
+- `app/services`: source, analysis, and readiness orchestration
+- `app/clients/database`: SQL read models for sources and embeddings
+- `app/clients/qdrant`: low-level Qdrant client
+- `app/domain`: content identity, embedding, and RSS repository configuration
+- `app/utils`: stateless shared helpers
 
 ## Quick Start (Local Development)
 
@@ -46,22 +47,21 @@ Optional dependencies:
 
 ```bash
 export QDRANT_URL=http://localhost:6333
-export RSS_FEEDS_REPOSITORY_PATH=var/rss_feeds
 ```
 
 ### 3) Run the API
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 Service endpoints include:
 
 - `GET /internal/health`
+- `GET /internal/ready`
 - `GET /internal/content/admin/sources/...`
 - `GET /internal/content/sources/...`
 - `GET /internal/content/analysis/...`
-- `GET /internal/content/rss/img/{icon_url}`
 
 ## Security Model
 
@@ -69,9 +69,8 @@ Service endpoints include:
 - Local/test-like environments may allow missing token when not explicitly
   forced into strict mode.
 - Qdrant access can use an optional API key.
-- RSS icon path resolution rejects traversal and non-SVG files.
-- CSRF origin checks are present for unsafe `/api/*` calls, although this
-  service mainly exposes `/internal/*` routes.
+- Browser-facing CORS and CSRF checks belong to `public_api`; this service
+  exposes only internal routes.
 
 ## Configuration
 
@@ -81,7 +80,6 @@ Service endpoints include:
 - `CONTENT_DATABASE_URL`
 - `CONTENT_READ_DATABASE_URL`
 - `DATABASE_URL`
-- `IDENTITY_DATABASE_URL`
 - `REQUIRE_EXPLICIT_DATABASE_URLS`
 - `INTERNAL_SERVICE_TOKEN`
 - `REQUIRE_INTERNAL_SERVICE_TOKEN`
@@ -93,18 +91,6 @@ Service endpoints include:
 - `QDRANT_API_KEY`
 - `SOURCE_EMBEDDING_WORKER_VERSION`
 - `SOURCE_EMBEDDING_DIMENSIONS`
-
-### RSS icons / local repository
-
-- `RSS_FEEDS_REPOSITORY_URL`
-- `RSS_FEEDS_REPOSITORY_BRANCH`
-- `RSS_FEEDS_REPOSITORY_PATH`
-
-### HTTP / browser-related settings
-
-- `CORS_ORIGINS`
-- `CSRF_TRUSTED_ORIGINS`
-- `CSRF_TRUST_SELF_ORIGIN`
 
 ### DB pool tuning
 

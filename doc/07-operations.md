@@ -11,9 +11,9 @@
 
 ## Known Constraints
 
-- `/internal/health` is only a liveness endpoint and does not verify Postgres or Qdrant
+- `/internal/health` is only a liveness endpoint
+- `/internal/ready` verifies internal token configuration, Postgres, and Qdrant
 - inter-service auth still relies on a shared secret token
-- the service currently initializes an identity DB engine that is not clearly used by exposed routes
 - Qdrant requests use short-lived HTTP clients unless a client is injected
 - Docker runtime still uses a broad default base image setup
 
@@ -23,17 +23,17 @@
 - Qdrant query failures and latency
 - Postgres pool saturation
 - error rates for source-not-found and upstream Qdrant failures
-- filesystem errors for RSS icon reads
 
 ## Documentation Maintenance
 
 Update docs in this folder whenever behavior changes in:
 
-- `main.py`
-- `database.py`
-- `app/sources/router/*`
-- `app/sources/services/*`
-- `app/sources/database/*`
-- `app/analytics/*`
-- `app/rss/*`
+- `app/main.py`
+- `app/database.py`
+- `app/routers/*`
+- `app/services/*`
+- `app/clients/database/*`
+- `app/clients/qdrant/*`
+- `app/domain/*`
+- `app/utils/*`
 - `shared_backend/security/internal_service_auth.py`

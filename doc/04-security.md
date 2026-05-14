@@ -29,15 +29,14 @@ Icon path resolution enforces:
 - Qdrant failures are surfaced as upstream-style application errors
 - no public Qdrant access is exposed directly by the service
 
-## Browser-Related Middleware
+## Browser Boundary
 
-- CORS is configurable through `CORS_ORIGINS`
-- CSRF origin checks are applied only to unsafe `/api/*` routes
-- the main exposed surface of this service is internal `/internal/*` routing
+- browser-facing CORS and CSRF checks are handled by `public_api`
+- `content_service` exposes internal `/internal/*` routing only
 
 ## Current Security Constraints
 
 - inter-service auth still relies on a shared secret token
 - environment misconfiguration can weaken route protection if local mode is
   incorrectly enabled
-- the service has no dedicated readiness gate for Qdrant or Postgres yet
+- `/internal/ready` verifies internal token configuration, Postgres, and Qdrant

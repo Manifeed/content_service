@@ -15,6 +15,20 @@ Response:
 }
 ```
 
+### `GET /internal/ready`
+
+Strict readiness endpoint. It validates internal-service token configuration,
+content database connectivity, and Qdrant availability.
+
+Response:
+
+```json
+{
+	"service": "content-service",
+	"status": "ready"
+}
+```
+
 ## Admin-Oriented Source Reads
 
 Routes below are exposed under `/internal/content/admin/sources` and require
@@ -66,7 +80,6 @@ Returns similar sources for a given source ID.
 Parameters:
 
 - `limit`
-- `worker_version` (optional override)
 
 ## Analysis Endpoints
 
@@ -86,20 +99,6 @@ Parameters:
 
 - `source_id`
 - `limit`
-- `worker_version`
-
-## RSS Icon Endpoint
-
-### `GET /internal/content/rss/img/{icon_url}`
-
-Reads an SVG icon file from the configured RSS repository path.
-
-Behavior:
-
-- trims incoming path
-- rejects invalid or unsafe paths
-- forces resolution inside the repository root
-- serves only `.svg` files
 
 ## Runtime Flows
 
