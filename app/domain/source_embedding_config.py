@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 
 FIXED_SOURCE_EMBEDDING_MODEL_NAME = "BAAI/bge-m3"
-DEFAULT_EMBEDDING_SERVICE_URL = "http://127.0.0.1:8000"
+DEFAULT_BGE_M3_INFERENCE_URL = "http://127.0.0.1:8000"
 DEFAULT_QDRANT_URL = "http://qdrant:6333"
 DEFAULT_QDRANT_COLLECTION = "article_embeddings"
 DEFAULT_SOURCE_SEARCH_DIMENSIONS = 1024
@@ -28,20 +28,17 @@ def resolve_source_embedding_dimensions() -> int | None:
 
 
 def resolve_embedding_service_url() -> str:
-    embedding_service_url = os.getenv(
-        "EMBEDDING_SERVICE_URL",
-        DEFAULT_EMBEDDING_SERVICE_URL,
-    ).strip()
-    if not embedding_service_url:
-        return DEFAULT_EMBEDDING_SERVICE_URL
-    return embedding_service_url.rstrip("/")
+    inference_url = os.getenv("BGE_M3_INFERENCE_URL", DEFAULT_BGE_M3_INFERENCE_URL).strip()
+    if not inference_url:
+        return DEFAULT_BGE_M3_INFERENCE_URL
+    return inference_url.rstrip("/")
 
 
 def resolve_embedding_service_api_key() -> str:
-    api_key = os.getenv("EMBEDDING_SERVICE_API_KEY", "").strip()
+    api_key = os.getenv("BGE_M3_INFERENCE_API_KEY", "").strip()
     if api_key:
         return api_key
-    raise RuntimeError("EMBEDDING_SERVICE_API_KEY is required")
+    raise RuntimeError("BGE_M3_INFERENCE_API_KEY is required")
 
 
 def resolve_source_search_dimensions() -> int:

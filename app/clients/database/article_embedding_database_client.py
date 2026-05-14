@@ -30,11 +30,9 @@ class ArticleEmbeddingIndexRead:
     company: str | None
     country: str
     published_at: datetime | None
-    feed_ids: list[int]
     feeds: list[dict[str, object]]
-    author_ids: list[int]
-    authors: list[str]
-    images_url: list[str]
+    authors: list[dict[str, object]]
+    img_url: str | None
 
 
 def list_articles_without_embeddings(
@@ -158,52 +156,35 @@ def get_article_embedding_index_reads(
                     article.published_at,
                     COALESCE(
                         (
-                            SELECT array_agg(link.feed_id ORDER BY link.feed_id)
-                            FROM article_feed_links AS link
-                            WHERE link.article_id = article.article_id
-                        ),
-                        ARRAY[]::integer[]
-                    ) AS feed_ids,
-                    COALESCE(
-                        (
                             SELECT json_agg(
                                 json_build_object(
                                     'id', feed.id,
-                                    'url', feed.url,
-                                    'section', feed.section,
-                                    'company_id', feed.company_id,
-                                    'company', feed_company.name
+                                    'section', feed.section
                                 )
                                 ORDER BY feed.id
                             )
                             FROM article_feed_links AS link
                             JOIN rss_feeds AS feed
                                 ON feed.id = link.feed_id
-                            LEFT JOIN rss_company AS feed_company
-                                ON feed_company.id = feed.company_id
                             WHERE link.article_id = article.article_id
                         ),
                         '[]'::json
                     ) AS feeds,
                     COALESCE(
                         (
-                            SELECT array_agg(author.id ORDER BY article_author.position)
+                            SELECT json_agg(
+                                json_build_object(
+                                    'id', author.id,
+                                    'name', COALESCE(author.display_name, '')
+                                )
+                                ORDER BY article_author.position
+                            )
                             FROM article_authors AS article_author
                             JOIN authors AS author
                                 ON author.id = article_author.author_id
                             WHERE article_author.article_id = article.article_id
                         ),
-                        ARRAY[]::bigint[]
-                    ) AS author_ids,
-                    COALESCE(
-                        (
-                            SELECT array_agg(author.display_name ORDER BY article_author.position)
-                            FROM article_authors AS article_author
-                            JOIN authors AS author
-                                ON author.id = article_author.author_id
-                            WHERE article_author.article_id = article.article_id
-                        ),
-                        ARRAY[]::text[]
+                        '[]'::json
                     ) AS authors
                 FROM articles AS article
                 LEFT JOIN rss_company AS company
@@ -231,15 +212,9 @@ def get_article_embedding_index_reads(
             company=(str(row["company"]) if row["company"] is not None else None),
             country=(str(row["country"]) if row["country"] is not None else "xx"),
             published_at=row["published_at"],
-            feed_ids=[int(feed_id) for feed_id in (row["feed_ids"] or [])],
             feeds=[dict(feed) for feed in (row["feeds"] or []) if isinstance(feed, dict)],
-            author_ids=[int(author_id) for author_id in (row["author_ids"] or [])],
-            authors=[str(author) for author in (row["authors"] or []) if author],
-            images_url=(
-                [str(row["image_url"])]
-                if row["image_url"] is not None
-                else []
-            ),
+            authors=[dict(author_row) for author_row in (row["authors"] or []) if isinstance(author_row, dict)],
+            img_url=(str(row["image_url"]) if row["image_url"] is not None else None),
         )
         for row in rows
     }

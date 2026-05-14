@@ -12,7 +12,7 @@ from app.domain.source_embedding_config import (
 
 
 class SourceSearchEmbeddingError(RuntimeError):
-    """Raised when embedding_service cannot serve source search embeddings."""
+    """Raised when bge-m3_inference cannot serve source search embeddings."""
 
 
 class SparseEmbeddingRead(BaseModel):
@@ -24,6 +24,7 @@ class EmbeddingServiceItemRead(BaseModel):
     index: int
     embedding: list[float] | None = None
     sparse_embedding: SparseEmbeddingRead | None = None
+    colbert_embedding: list[list[float]] | None = None
 
 
 class EmbeddingServiceResponseRead(BaseModel):
@@ -52,20 +53,21 @@ class SourceSearchQueryEmbedder:
                 "input": [subject_query],
                 "dense": True,
                 "sparse": True,
+                "colbert": False,
             },
         )
         if response.status_code >= 400:
             raise SourceSearchEmbeddingError(
-                f"embedding_service returned HTTP {response.status_code}: {response.text}"
+                f"bge-m3_inference returned HTTP {response.status_code}: {response.text}"
             )
         payload = EmbeddingServiceResponseRead.model_validate(response.json())
         if len(payload.data) != 1:
-            raise SourceSearchEmbeddingError("embedding_service returned an unexpected item count")
+            raise SourceSearchEmbeddingError("bge-m3_inference returned an unexpected item count")
         item = payload.data[0]
         if not item.embedding:
-            raise SourceSearchEmbeddingError("embedding_service returned an empty dense vector")
+            raise SourceSearchEmbeddingError("bge-m3_inference returned an empty dense vector")
         if item.sparse_embedding is None:
-            raise SourceSearchEmbeddingError("embedding_service returned no sparse vector")
+            raise SourceSearchEmbeddingError("bge-m3_inference returned no sparse vector")
         return SourceSearchQueryEmbedding(
             dense=item.embedding,
             sparse=item.sparse_embedding,
@@ -76,7 +78,7 @@ class SourceSearchQueryEmbedder:
         response = self._request(method="GET", path="/internal/ready")
         if response.status_code >= 400:
             raise SourceSearchEmbeddingError(
-                f"embedding_service readiness returned HTTP {response.status_code}: {response.text}"
+                f"bge-m3_inference readiness returned HTTP {response.status_code}: {response.text}"
             )
 
     def _request(

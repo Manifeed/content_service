@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+import pytest
+
 from app.clients.qdrant.content_qdrant_client import build_qdrant_source_search_filter
 from app.domain.source_search_query import (
     build_e5_query_input,
@@ -9,8 +11,10 @@ from app.domain.source_search_query import (
     normalize_embedding_vector,
     parse_source_search_query,
 )
+from app.services.source_search_service import search_user_sources
 from app.clients.qdrant.content_qdrant_client import QdrantScoredArticleEmbeddingPointRead
 from app.services.source_search_service import _rank_vector_candidates
+from shared_backend.errors.app_error import UpstreamServiceError
 
 
 def test_source_search_parser_keeps_filter_words_as_subject() -> None:
@@ -51,12 +55,13 @@ def test_query_embedder_input_and_normalization_contract() -> None:
 
 
 def test_qdrant_source_search_filter_contract() -> None:
+    published_from = datetime(2026, 1, 1, tzinfo=UTC)
     payload = build_qdrant_source_search_filter(
         article_ids=[2, 1, 2],
         country="fr",
         company_id=12,
         author_id=7,
-        published_from=datetime(2026, 1, 1, tzinfo=UTC),
+        published_from=published_from,
     )
 
     assert payload == {
@@ -64,11 +69,20 @@ def test_qdrant_source_search_filter_contract() -> None:
             {"has_id": [1, 2]},
             {"key": "country", "match": {"value": "fr"}},
             {"key": "company_id", "match": {"value": 12}},
-            {"key": "author_ids", "match": {"value": 7}},
+            {
+                "nested": {
+                    "key": "authors",
+                    "filter": {
+                        "must": [
+                            {"key": "id", "match": {"value": 7}},
+                        ],
+                    },
+                },
+            },
             {
                 "key": "published_at",
                 "range": {
-                    "gte": "2026-01-01T00:00:00+00:00",
+                    "gte": int(published_from.timestamp()),
                 },
             },
         ]
@@ -81,7 +95,6 @@ def test_vector_ranking_keeps_only_confirmed_topic_matches() -> None:
             point_id="1",
             article_id=1,
             article_key="a",
-            model_name="BAAI/bge-m3",
             score=0.9,
             published_at=datetime(2026, 1, 1, tzinfo=UTC),
         ),
@@ -89,7 +102,6 @@ def test_vector_ranking_keeps_only_confirmed_topic_matches() -> None:
             point_id="2",
             article_id=2,
             article_key="b",
-            model_name="BAAI/bge-m3",
             score=0.8,
             published_at=datetime(2026, 2, 1, tzinfo=UTC),
         ),
@@ -99,7 +111,6 @@ def test_vector_ranking_keeps_only_confirmed_topic_matches() -> None:
             point_id="2",
             article_id=2,
             article_key="b",
-            model_name="BAAI/bge-m3",
             score=0.4,
             published_at=datetime(2026, 2, 1, tzinfo=UTC),
         ),
@@ -107,7 +118,6 @@ def test_vector_ranking_keeps_only_confirmed_topic_matches() -> None:
             point_id="3",
             article_id=3,
             article_key="c",
-            model_name="BAAI/bge-m3",
             score=0.3,
             published_at=datetime(2026, 3, 1, tzinfo=UTC),
         ),
@@ -125,7 +135,6 @@ def test_vector_ranking_prioritizes_date_after_relevance_gate() -> None:
             point_id="1",
             article_id=1,
             article_key="a",
-            model_name="BAAI/bge-m3",
             score=0.7,
             published_at=datetime(2026, 1, 1, tzinfo=UTC),
         ),
@@ -133,7 +142,6 @@ def test_vector_ranking_prioritizes_date_after_relevance_gate() -> None:
             point_id="2",
             article_id=2,
             article_key="b",
-            model_name="BAAI/bge-m3",
             score=0.7,
             published_at=datetime(2026, 5, 1, tzinfo=UTC),
         ),
@@ -143,7 +151,6 @@ def test_vector_ranking_prioritizes_date_after_relevance_gate() -> None:
             point_id="1",
             article_id=1,
             article_key="a",
-            model_name="BAAI/bge-m3",
             score=0.7,
             published_at=datetime(2026, 1, 1, tzinfo=UTC),
         ),
@@ -151,7 +158,6 @@ def test_vector_ranking_prioritizes_date_after_relevance_gate() -> None:
             point_id="2",
             article_id=2,
             article_key="b",
-            model_name="BAAI/bge-m3",
             score=0.7,
             published_at=datetime(2026, 5, 1, tzinfo=UTC),
         ),
@@ -164,3 +170,28 @@ def test_vector_ranking_prioritizes_date_after_relevance_gate() -> None:
     )
 
     assert [candidate.article_id for candidate in result] == [2, 1]
+
+
+def test_source_search_returns_upstream_error_when_embedder_is_unavailable(monkeypatch) -> None:
+    import app.services.source_search_service as source_search_service
+
+    def raise_embedder_unavailable():
+        raise RuntimeError("embedder unavailable")
+
+    monkeypatch.setattr(
+        source_search_service,
+        "get_source_search_query_embedder",
+        raise_embedder_unavailable,
+    )
+
+    with pytest.raises(UpstreamServiceError, match="Source search backend is not ready"):
+        search_user_sources(
+            db=object(),  # type: ignore[arg-type]
+            q="finance",
+            limit=10,
+            offset=0,
+            country=None,
+            company_id=None,
+            author_id=None,
+            period="all",
+        )
