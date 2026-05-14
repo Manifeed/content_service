@@ -33,12 +33,12 @@ Notes:
 - `SOURCE_EMBEDDING_DIMENSIONS`
 	- optional integer override; default BGE-M3 dense dimension is `1024`
 
-- `BGE_M3_INFERENCE_URL`
+- `EMBEDDING_SERVICE_URL`
 	- default: `http://bge-m3_inference:8000`
 	- internal service used for BGE-M3 query embeddings
 
-- `BGE_M3_INFERENCE_API_KEY`
-	- canonical API key for the inference service
+- `EMBEDDING_SERVICE_API_KEY`
+	- API key for the inference service
 
 - `SOURCE_SEARCH_RECENCY_HALFLIFE_DAYS`
 	- default: `14`
