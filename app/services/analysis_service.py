@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.clients.qdrant.content_qdrant_client import QdrantIndexingError, ContentQdrantClient
-from app.clients.database.article_embedding_database_client import count_indexed_embeddings
 from app.clients.database.source_read_database_client import (
     count_sources,
     get_user_source_detail_read_by_id,
 )
 from app.domain.source_embedding_config import resolve_source_embedding_model_name
+from shared_backend.clients.article_embedding_database_client import count_indexed_embeddings
+from shared_backend.clients.qdrant_client import QdrantIndexingError
 
 from shared_backend.errors.app_error import UpstreamServiceError
 from shared_backend.errors.custom_exceptions import SourceNotFoundError
@@ -17,6 +17,8 @@ from shared_backend.schemas.analytics.analysis_schema import (
     SimilarSourceRead,
     SimilarSourcesRead,
 )
+
+from app.clients.qdrant.content_qdrant_client import ContentQdrantClient
 
 
 def read_analysis_overview(db: Session) -> AnalysisOverviewRead:

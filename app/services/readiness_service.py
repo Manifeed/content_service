@@ -4,9 +4,11 @@ from app.clients.embedding.source_search_embedder_client import (
     SourceSearchEmbeddingError,
     get_source_search_query_embedder,
 )
-from app.clients.qdrant.content_qdrant_client import QdrantIndexingError, ContentQdrantClient
+from shared_backend.clients.qdrant_client import QdrantIndexingError
 
 from shared_backend.errors.app_error import UpstreamServiceError
+
+from app.clients.qdrant.content_qdrant_client import ContentQdrantClient
 
 
 def check_qdrant_ready() -> None:
