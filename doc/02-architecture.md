@@ -5,12 +5,12 @@
 - `app/main.py`: internal-only application bootstrap, logging, and router registration
 - `app/database.py`: content DB URL resolution, engine creation, sessions, and readiness check
 - `app/routers/internal_content_router.py`: single internal router assembly
-- `app/routers`: internal source and analysis HTTP route families
-- `app/services`: source read, analysis, and readiness orchestration
-- `app/clients/database`: SQL read models and embedding read access
+- `app/routers/user_source_router.py`: source list, search, detail, and similar routes
+- `app/services`: source read, search, analysis, and readiness orchestration
+- `app/clients/database`: SQL read models for sources
+- `app/clients/embedding`: query embedding client for semantic search
 - `app/clients/qdrant`: low-level Qdrant client
-- `app/domain`: content identity, embedding, and RSS repository configuration
-- `app/utils`: stateless helper functions
+- `app/domain`: search query parsing and embedding configuration
 
 ## Route Layer
 
@@ -18,30 +18,32 @@ Main route families:
 
 - `/internal/health`: simple liveness endpoint
 - `/internal/ready`: strict readiness endpoint for token, content DB, and Qdrant checks
-- `/internal/content/admin/sources...`: admin-oriented source reads
-- `/internal/content/sources...`: user-oriented source reads
-- `/internal/content/analysis...`: analysis overview and similar-source lookup
+- `/internal/content/sources/...`: user-oriented source reads and search
+- `/internal/content/sources/{source_id}/similar`: similar-source lookup
 
 ## Business Layer
 
 Key service modules:
 
-- `app/services/source_admin_service.py`
 - `app/services/source_user_service.py`
-- `app/services/source_detail_service.py`
+- `app/services/source_search_service.py`
+- `app/services/source_search_filters.py`
+- `app/services/source_search_page_builder.py`
+- `app/services/source_search_ranking.py`
 - `app/services/analysis_service.py`
 - `app/services/readiness_service.py`
 
-These modules keep the route layer thin and isolate SQL/Qdrant behavior from
-FastAPI request handling.
+These modules keep the route layer thin and isolate SQL, embedding, and Qdrant
+behavior from FastAPI request handling.
 
 ## Persistence Layer
 
 Database responsibilities are split by concern:
 
 - `app/database.py`: content session factories and content DB readiness
-- `app/clients/database/source_read_database_client.py`: source list/detail read SQL
-- `app/clients/database/article_embedding_database_client.py`: embedding metadata SQL
+- `app/clients/database/source_read_database_client.py`: facade over list/detail/search SQL helpers
+- `app/clients/database/source_read_*_database_client.py`: focused SQL read modules
+- `app/clients/database/source_read_support.py` and `source_read_mappers.py`: shared SQL helpers
 
 ## Qdrant Integration Layer
 

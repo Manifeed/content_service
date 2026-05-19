@@ -1,32 +1,33 @@
 # Manifeed Content Service
 
 `content_service` is the internal read-oriented content service for Manifeed.
-It exposes backend-only FastAPI endpoints for source reads, source detail
-queries, and Qdrant-backed similar-source lookups.
+It exposes backend-only FastAPI endpoints for user source reads, semantic source
+search, and Qdrant-backed similar-source lookups.
 
 This service is intended for trusted internal consumers such as `public_api`,
 not for browsers or public clients directly.
 
 ## What This Service Provides
 
-- Admin-oriented source listing reads
 - User-oriented source listing reads
+- Semantic source search (`/internal/content/sources/search`)
 - Source detail reads
-- Analysis overview for indexed embeddings
 - Similar-source lookup through Qdrant
 - Internal token gate (`x-manifeed-internal-token`) on exposed routers
+
+Admin-oriented source reads live in `admin_service`.
 
 ## Architecture Overview
 
 - `app/main.py`: FastAPI bootstrap for the internal-only service
-- `app/routers/internal_content_router.py`: single internal router assembly
+- `app/routers/internal_content_router.py`: internal router assembly
+- `app/routers/user_source_router.py`: source list, search, detail, and similar routes
 - `app/database.py`: content database engine, sessions, and readiness check
-- `app/routers`: internal route families grouped by feature
-- `app/services`: source, analysis, and readiness orchestration
-- `app/clients/database`: SQL read models for sources and embeddings
+- `app/services`: source, search, analysis, and readiness orchestration
+- `app/clients/database`: SQL read models for sources
+- `app/clients/embedding`: query embedding client for semantic search
 - `app/clients/qdrant`: low-level Qdrant client
-- `app/domain`: content identity, embedding, and RSS repository configuration
-- `app/utils`: stateless shared helpers
+- `app/domain`: search query parsing and embedding configuration
 
 ## Quick Start (Local Development)
 
@@ -41,12 +42,15 @@ python3 -m pip install -r requirements.txt
 ```bash
 export APP_ENV=local
 export CONTENT_DATABASE_URL=postgresql://manifeed:manifeed@localhost:5432/manifeed_content
+export INTERNAL_SERVICE_TOKEN='replace-with-strong-secret-min-32-chars'
 ```
 
 Optional dependencies:
 
 ```bash
 export QDRANT_URL=http://localhost:6333
+export EMBEDDING_SERVICE_URL=http://127.0.0.1:8000
+export EMBEDDING_SERVICE_API_KEY='replace-me'
 ```
 
 ### 3) Run the API
@@ -59,9 +63,10 @@ Service endpoints include:
 
 - `GET /internal/health`
 - `GET /internal/ready`
-- `GET /internal/content/admin/sources/...`
-- `GET /internal/content/sources/...`
-- `GET /internal/content/analysis/...`
+- `GET /internal/content/sources/`
+- `GET /internal/content/sources/search`
+- `GET /internal/content/sources/{source_id}`
+- `GET /internal/content/sources/{source_id}/similar`
 
 ## Security Model
 
@@ -84,13 +89,16 @@ Service endpoints include:
 - `INTERNAL_SERVICE_TOKEN`
 - `REQUIRE_INTERNAL_SERVICE_TOKEN`
 
-### Qdrant / analysis
+### Search / embeddings / Qdrant
 
 - `QDRANT_URL`
 - `QDRANT_COLLECTION_NAME`
 - `QDRANT_API_KEY`
+- `EMBEDDING_SERVICE_URL`
+- `EMBEDDING_SERVICE_API_KEY`
 - `SOURCE_EMBEDDING_WORKER_VERSION`
 - `SOURCE_EMBEDDING_DIMENSIONS`
+- `SOURCE_SEARCH_RECENCY_HALFLIFE_DAYS`
 
 ### DB pool tuning
 
@@ -107,7 +115,8 @@ Run the current test suite:
 pytest -q
 ```
 
-Current tests are limited and mainly cover source compilation.
+Coverage includes source search ranking, embedding configuration, internal app
+bootstrap/readiness, file-size guardrails, and shared networking contracts.
 
 ## Docker
 
@@ -125,6 +134,7 @@ docker run --rm -p 8000:8000 \
 	-e CONTENT_DATABASE_URL='postgresql://user:pass@content-host:5432/content' \
 	-e INTERNAL_SERVICE_TOKEN='replace-with-strong-secret-min-32-chars' \
 	-e QDRANT_URL='http://qdrant:6333' \
+	-e EMBEDDING_SERVICE_API_KEY='replace-me' \
 	manifeed-content-service
 ```
 

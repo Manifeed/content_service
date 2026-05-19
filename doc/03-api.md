@@ -29,36 +29,10 @@ Response:
 }
 ```
 
-## Admin-Oriented Source Reads
-
-Routes below are exposed under `/internal/content/admin/sources` and require
-internal token authorization.
-
-### `GET /internal/content/admin/sources/`
-
-Lists RSS sources.
-
-Supported parameters:
-
-- `limit`
-- `offset`
-- `author_id`
-
-### `GET /internal/content/admin/sources/feeds/{feed_id}`
-
-Lists RSS sources filtered by feed.
-
-### `GET /internal/content/admin/sources/companies/{company_id}`
-
-Lists RSS sources filtered by company.
-
-### `GET /internal/content/admin/sources/{source_id}`
-
-Returns an RSS source detail payload.
-
 ## User-Oriented Source Reads
 
-Routes below are exposed under `/internal/content/sources`.
+Routes below are exposed under `/internal/content/sources` and require
+internal token authorization.
 
 ### `GET /internal/content/sources/`
 
@@ -68,6 +42,22 @@ Parameters:
 
 - `limit`
 - `offset`
+
+### `GET /internal/content/sources/search`
+
+Runs semantic source search.
+
+Parameters:
+
+- `q`
+- `limit`
+- `offset`
+- `country`
+- `company_id`
+- `author_id`
+- `period` (`all`, `1h`, `24h`, `7d`, `1m`, `1y`)
+
+Unknown query parameters are rejected with `422`.
 
 ### `GET /internal/content/sources/{source_id}`
 
@@ -81,25 +71,6 @@ Parameters:
 
 - `limit`
 
-## Analysis Endpoints
-
-### `GET /internal/content/analysis/overview`
-
-Returns:
-
-- total source count
-- indexed embedding count
-- Qdrant collection name
-
-### `GET /internal/content/analysis/similar-sources`
-
-Returns similar sources for a given `source_id`.
-
-Parameters:
-
-- `source_id`
-- `limit`
-
 ## Runtime Flows
 
 ### Source Read Flow
@@ -109,6 +80,15 @@ Parameters:
 3. execute SQL read model query
 4. map DB rows to schema payloads
 5. return page or detail response
+
+### Source Search Flow
+
+1. validate internal token
+2. parse and normalize the search query
+3. embed the query through the embedding service
+4. query Qdrant and hydrate SQL metadata for candidates
+5. rank and paginate matches
+6. return `UserSourceSearchPageRead`
 
 ### Similar Source Flow
 
