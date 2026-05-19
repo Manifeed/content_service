@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from datetime import datetime
-import unicodedata
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -27,55 +26,6 @@ COALESCE(
     '[]'::json
 )
 """
-
-
-def build_source_filters(
-    *,
-    feed_id: int | None,
-    company_id: int | None,
-    author_id: int | None,
-) -> tuple[list[str], dict[str, object]]:
-    filters: list[str] = []
-    params: dict[str, object] = {}
-    if feed_id is not None:
-        filters.append(
-            """
-            EXISTS (
-                SELECT 1
-                FROM article_feed_links AS link
-                WHERE link.article_id = article.article_id
-                    AND link.feed_id = :feed_id
-            )
-            """
-        )
-        params["feed_id"] = feed_id
-    if company_id is not None:
-        filters.append(
-            """
-            EXISTS (
-                SELECT 1
-                FROM article_feed_links AS link
-                JOIN rss_feeds AS feed
-                    ON feed.id = link.feed_id
-                WHERE link.article_id = article.article_id
-                    AND feed.company_id = :company_id
-            )
-            """
-        )
-        params["company_id"] = company_id
-    if author_id is not None:
-        filters.append(
-            """
-            EXISTS (
-                SELECT 1
-                FROM article_authors AS article_author
-                WHERE article_author.article_id = article.article_id
-                    AND article_author.author_id = :author_id
-            )
-            """
-        )
-        params["author_id"] = author_id
-    return filters, params
 
 
 def build_source_search_filters(
@@ -123,16 +73,6 @@ def build_source_search_filters(
         filters.append("article.published_at >= :published_from")
         params["published_from"] = published_from
     return filters, params
-
-
-def normalize_lookup_value(value: str) -> str:
-    decomposed = unicodedata.normalize("NFKD", value.strip())
-    normalized = "".join(
-        character
-        for character in decomposed
-        if not unicodedata.combining(character)
-    )
-    return " ".join(normalized.lower().split())
 
 
 def source_extra_values(extra_rows: Sequence[object]) -> tuple[list[str], list[str]]:

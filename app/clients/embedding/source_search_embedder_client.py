@@ -35,7 +35,6 @@ class EmbeddingServiceResponseRead(BaseModel):
 class SourceSearchQueryEmbedding:
     dense: list[float]
     sparse: SparseEmbeddingRead
-    model_name: str
 
 
 class SourceSearchQueryEmbedder:
@@ -71,15 +70,7 @@ class SourceSearchQueryEmbedder:
         return SourceSearchQueryEmbedding(
             dense=item.embedding,
             sparse=item.sparse_embedding,
-            model_name="bge-m3",
         )
-
-    def check_ready(self) -> None:
-        response = self._request(method="GET", path="/internal/ready")
-        if response.status_code >= 400:
-            raise SourceSearchEmbeddingError(
-                f"bge-m3_inference readiness returned HTTP {response.status_code}: {response.text}"
-            )
 
     def _request(
         self,
@@ -109,7 +100,3 @@ class SourceSearchQueryEmbedder:
 
 def get_source_search_query_embedder() -> SourceSearchQueryEmbedder:
     return SourceSearchQueryEmbedder()
-
-
-def reset_source_search_query_embedder() -> None:
-    return None

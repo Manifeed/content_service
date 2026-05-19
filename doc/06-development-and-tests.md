@@ -57,6 +57,10 @@ pytest -q
 Current automated coverage validates source compilation, the internal app
 bootstrap, readiness, and the shared content-service networking client.
 
+## Runtime Base
+
+The container build now targets `python:3.13-slim`.
+
 Recommended next tests:
 
 - internal token behavior across environment modes

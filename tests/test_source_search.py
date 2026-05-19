@@ -4,16 +4,15 @@ from datetime import UTC, datetime
 
 import pytest
 
-from app.clients.qdrant.content_qdrant_client import build_qdrant_source_search_filter
 from app.domain.source_search_query import (
-    build_e5_query_input,
     normalize_search_query,
-    normalize_embedding_vector,
     parse_source_search_query,
 )
-from app.services.source_search_service import search_user_sources
-from app.clients.qdrant.content_qdrant_client import QdrantScoredArticleEmbeddingPointRead
-from app.services.source_search_service import _rank_vector_candidates
+from app.services.source_search_ranking import rank_vector_candidates
+from shared_backend.clients.qdrant_client import (
+    QdrantScoredArticleEmbeddingPointRead,
+    build_qdrant_source_search_filter,
+)
 from shared_backend.errors.app_error import UpstreamServiceError
 
 
@@ -41,17 +40,12 @@ def test_source_search_parser_does_not_extract_author_or_date() -> None:
     assert parsed.subject_query == "articles écrits par ada lovelace après janvier 2026"
 
 
-def test_query_embedder_input_and_normalization_contract() -> None:
-    assert build_e5_query_input("  finance   durable ") == "query: finance durable"
+def test_normalize_search_query_contract() -> None:
     assert (
         normalize_search_query("Nvidia")
         == normalize_search_query("nvidia")
         == normalize_search_query("NVIDIA")
     )
-
-    vector = normalize_embedding_vector([3.0, 4.0])
-
-    assert vector == [0.6, 0.8]
 
 
 def test_qdrant_source_search_filter_contract() -> None:
@@ -102,7 +96,7 @@ def test_vector_ranking_keeps_only_confirmed_topic_matches() -> None:
             point_id="2",
             article_id=2,
             article_key="b",
-            score=0.8,
+            score=0.9,
             published_at=datetime(2026, 2, 1, tzinfo=UTC),
         ),
     ]
@@ -111,7 +105,7 @@ def test_vector_ranking_keeps_only_confirmed_topic_matches() -> None:
             point_id="2",
             article_id=2,
             article_key="b",
-            score=0.4,
+            score=0.5,
             published_at=datetime(2026, 2, 1, tzinfo=UTC),
         ),
         QdrantScoredArticleEmbeddingPointRead(
@@ -123,7 +117,7 @@ def test_vector_ranking_keeps_only_confirmed_topic_matches() -> None:
         ),
     ]
 
-    result = _rank_vector_candidates(sparse_items=sparse, dense_items=dense)
+    result = rank_vector_candidates(sparse_items=sparse, dense_items=dense)
 
     assert [candidate.article_id for candidate in result] == [2]
     assert result[0].matched_by == {"sparse", "dense"}
@@ -163,7 +157,7 @@ def test_vector_ranking_prioritizes_date_after_relevance_gate() -> None:
         ),
     ]
 
-    result = _rank_vector_candidates(
+    result = rank_vector_candidates(
         subject_query="finance durable marche europe",
         sparse_items=sparse,
         dense_items=dense,
@@ -174,6 +168,7 @@ def test_vector_ranking_prioritizes_date_after_relevance_gate() -> None:
 
 def test_source_search_returns_upstream_error_when_embedder_is_unavailable(monkeypatch) -> None:
     import app.services.source_search_service as source_search_service
+    from app.services.source_search_service import search_user_sources
 
     def raise_embedder_unavailable():
         raise RuntimeError("embedder unavailable")

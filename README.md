@@ -128,8 +128,9 @@ docker run --rm -p 8000:8000 \
 	manifeed-content-service
 ```
 
-The runtime image is multi-stage, runs as a non-root user, and installs
-`shared_backend` from a wheel built locally from the monorepo.
+The image is multi-stage, runs as a non-root user, and installs
+`shared_backend` from a wheel built locally from the monorepo. The runtime
+base image is `python:3.13-slim`.
 
 ## Detailed Documentation
 

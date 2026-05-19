@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 
 from shared_backend.schemas.sources.source_schema import (
     RssSourceAuthorRead,
-    RssSourceRead,
     UserSourceRead,
     UserSourceSearchItemRead,
 )
@@ -19,12 +18,6 @@ def to_public_source_url(value: object) -> str | None:
     if value is None:
         return None
     return normalize_public_http_url(str(value))
-
-
-def to_public_image_url(value: object) -> str | None:
-    if value is None:
-        return None
-    return normalize_public_http_url(str(value), require_https=True)
 
 
 def to_public_published_at(published_at: datetime | None) -> datetime | None:
@@ -49,24 +42,6 @@ def parse_source_authors(value: object) -> list[RssSourceAuthorRead]:
             continue
         authors.append(RssSourceAuthorRead(id=author_id, name=author_name))
     return authors
-
-
-def to_rss_source_read(
-    row: object,
-    *,
-    company_names_by_source_id: dict[int, list[str]],
-) -> RssSourceRead:
-    mapping = dict(row)
-    source_id = int(mapping["id"])
-    return RssSourceRead(
-        id=source_id,
-        title=str(mapping["title"]),
-        authors=parse_source_authors(mapping["authors"]),
-        url=to_public_source_url(mapping["url"]),
-        published_at=to_public_published_at(mapping["published_at"]),
-        image_url=to_public_image_url(mapping.get("image_url")),
-        company_names=company_names_by_source_id.get(source_id, []),
-    )
 
 
 def to_user_source_read(

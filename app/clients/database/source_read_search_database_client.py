@@ -17,7 +17,6 @@ from app.clients.database.source_read_support import (
     SOURCE_URL_SQL,
     build_source_search_filters,
     list_source_extra_values_by_source_ids,
-    normalize_lookup_value,
 )
 
 from shared_backend.schemas.sources.source_schema import UserSourceSearchItemRead
@@ -115,41 +114,3 @@ def list_user_source_search_items_by_ids(
         )
         items[item.id] = item
     return items
-
-
-def resolve_source_author_id_by_name(db: Session, *, author_name: str) -> int | None:
-    normalized_name = normalize_lookup_value(author_name)
-    if not normalized_name:
-        return None
-    row = (
-        db.execute(
-            text(
-                """
-                SELECT author.id
-                FROM authors AS author
-                WHERE lower(author.display_name) = lower(:author_name)
-                    OR author.normalized_name = :normalized_name
-                    OR author.display_name ILIKE :author_like
-                ORDER BY
-                    CASE
-                        WHEN lower(author.display_name) = lower(:author_name) THEN 0
-                        WHEN author.normalized_name = :normalized_name THEN 1
-                        ELSE 2
-                    END,
-                    length(author.display_name) ASC,
-                    author.id ASC
-                LIMIT 1
-                """
-            ),
-            {
-                "author_name": author_name.strip(),
-                "normalized_name": normalized_name,
-                "author_like": f"%{author_name.strip()}%",
-            },
-        )
-        .mappings()
-        .first()
-    )
-    if row is None:
-        return None
-    return int(row["id"])

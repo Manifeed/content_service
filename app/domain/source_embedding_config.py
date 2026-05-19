@@ -2,14 +2,7 @@ from __future__ import annotations
 
 import os
 
-from shared_backend.domain.source_embedding_config import (
-    FIXED_SOURCE_EMBEDDING_MODEL_NAME,
-    resolve_qdrant_api_key,
-    resolve_qdrant_collection_name,
-    resolve_qdrant_url,
-    resolve_source_embedding_dimensions,
-    resolve_source_embedding_model_name,
-)
+from shared_backend.domain.source_embedding_config import resolve_source_embedding_dimensions
 
 DEFAULT_EMBEDDING_SERVICE_URL = "http://127.0.0.1:8000"
 DEFAULT_SOURCE_SEARCH_DIMENSIONS = 1024

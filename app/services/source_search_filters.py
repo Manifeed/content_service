@@ -22,7 +22,6 @@ class ResolvedSourceSearchFilters:
     company_id: int | None = None
     author_id: int | None = None
     published_from: datetime | None = None
-    published_period: str = "all"
     applied_filters: list[AppliedSearchFilterRead] = field(default_factory=list)
 
 
@@ -79,7 +78,6 @@ def resolve_source_search_filters(
         company_id=explicit_company_id,
         author_id=explicit_author_id,
         published_from=resolved_published_from,
-        published_period=resolved_period,
         applied_filters=applied_filters,
     )
 

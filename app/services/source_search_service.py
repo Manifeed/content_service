@@ -134,6 +134,3 @@ def _search_and_rank_vector_candidates(
         sparse_items=sparse_items,
         dense_items=dense_items,
     )
-
-
-_rank_vector_candidates = rank_vector_candidates

@@ -19,17 +19,6 @@ def parse_source_search_query(query: str | None) -> ParsedSourceSearchQuery:
     )
 
 
-def build_e5_query_input(subject_query: str) -> str:
-    return f"query: {normalize_search_query(subject_query)}"
-
-
-def normalize_embedding_vector(vector: list[float]) -> list[float]:
-    norm = sum(value * value for value in vector) ** 0.5
-    if norm <= 0:
-        return vector
-    return [value / norm for value in vector]
-
-
 def normalize_search_query(value: str) -> str:
     normalized = unicodedata.normalize("NFKC", value).casefold()
     return _normalize_whitespace(normalized.strip(" .,:;"))
