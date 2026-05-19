@@ -31,6 +31,8 @@ COALESCE(
 def build_source_search_filters(
     *,
     country: str | None,
+    language: str | None,
+    themes: list[str] | None,
     company_id: int | None,
     author_id: int | None,
     published_from: datetime | None,
@@ -40,6 +42,21 @@ def build_source_search_filters(
     if country:
         filters.append("article.country = :country")
         params["country"] = country
+    if language:
+        filters.append("article.language = :language")
+        params["language"] = language
+    if themes:
+        filters.append(
+            """
+            EXISTS (
+                SELECT 1
+                FROM article_theme AS article_theme
+                WHERE article_theme.article_id = article.article_id
+                    AND article_theme.theme::text = ANY(:themes)
+            )
+            """
+        )
+        params["themes"] = themes
     if company_id is not None:
         filters.append(
             """
