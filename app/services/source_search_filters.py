@@ -130,7 +130,7 @@ def normalize_source_search_country(value: str | None) -> str | None:
 def normalize_source_search_language(value: str | None) -> str | None:
     if value is None:
         return None
-    normalized = value.strip().casefold()[:2]
+    normalized = value.strip().casefold()[:3]
     return normalized or None
 
 

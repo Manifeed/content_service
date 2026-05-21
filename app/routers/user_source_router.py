@@ -50,7 +50,7 @@ def search_user_source_articles(
     limit: int = Query(default=24, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     country: str | None = Query(default=None, min_length=2, max_length=2),
-    language: str | None = Query(default=None, min_length=2, max_length=2),
+    language: str | None = Query(default=None, min_length=2, max_length=3),
     theme: str | None = Query(default=None, max_length=120),
     company_id: int | None = Query(default=None, ge=1),
     author_id: int | None = Query(default=None, ge=1),
