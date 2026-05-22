@@ -54,7 +54,6 @@ def test_qdrant_source_search_filter_contract() -> None:
         article_ids=[2, 1, 2],
         country="fr",
         language="fr",
-        themes=["politics"],
         company_id=12,
         author_id=7,
         published_from=published_from,
@@ -65,7 +64,6 @@ def test_qdrant_source_search_filter_contract() -> None:
             {"has_id": [1, 2]},
             {"key": "country", "match": {"value": "fr"}},
             {"key": "language", "match": {"value": "fr"}},
-            {"key": "themes", "match": {"value": "politics"}},
             {"key": "company_id", "match": {"value": 12}},
             {
                 "nested": {
@@ -191,7 +189,6 @@ def test_source_search_returns_upstream_error_when_embedder_is_unavailable(monke
             offset=0,
             country=None,
             language=None,
-            theme=None,
             company_id=None,
             author_id=None,
             period="all",

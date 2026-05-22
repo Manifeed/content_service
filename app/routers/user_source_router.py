@@ -20,7 +20,6 @@ _SOURCE_SEARCH_QUERY_PARAMS = {
     "offset",
     "country",
     "language",
-    "theme",
     "company_id",
     "author_id",
     "period",
@@ -51,7 +50,6 @@ def search_user_source_articles(
     offset: int = Query(default=0, ge=0),
     country: str | None = Query(default=None, min_length=2, max_length=2),
     language: str | None = Query(default=None, min_length=2, max_length=3),
-    theme: str | None = Query(default=None, max_length=120),
     company_id: int | None = Query(default=None, ge=1),
     author_id: int | None = Query(default=None, ge=1),
     period: str | None = Query(
@@ -68,7 +66,6 @@ def search_user_source_articles(
         offset=offset,
         country=country,
         language=language,
-        theme=theme,
         company_id=company_id,
         author_id=author_id,
         period=period,

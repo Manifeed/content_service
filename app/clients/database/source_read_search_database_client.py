@@ -35,7 +35,6 @@ def list_user_source_filtered_search_candidates(
     limit: int,
     country: str | None,
     language: str | None,
-    themes: list[str] | None,
     company_id: int | None,
     author_id: int | None,
     published_from: datetime | None,
@@ -43,7 +42,6 @@ def list_user_source_filtered_search_candidates(
     filters, params = build_source_search_filters(
         country=country,
         language=language,
-        themes=themes,
         company_id=company_id,
         author_id=author_id,
         published_from=published_from,

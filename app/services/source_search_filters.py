@@ -20,7 +20,6 @@ SOURCE_SEARCH_PERIODS: dict[str, timedelta | None] = {
 class ResolvedSourceSearchFilters:
     country: str | None = None
     language: str | None = None
-    themes: list[str] = field(default_factory=list)
     company_id: int | None = None
     author_id: int | None = None
     published_from: datetime | None = None
@@ -31,7 +30,6 @@ def resolve_source_search_filters(
     *,
     explicit_country: str | None,
     explicit_language: str | None,
-    explicit_theme: str | None,
     explicit_company_id: int | None,
     explicit_author_id: int | None,
     explicit_period: str | None,
@@ -55,16 +53,6 @@ def resolve_source_search_filters(
                 field="language",
                 value=language,
                 label=f"Language: {language.upper()}",
-            )
-        )
-
-    themes = normalize_source_search_themes(explicit_theme)
-    for theme in themes:
-        applied_filters.append(
-            AppliedSearchFilterRead(
-                field="theme",
-                value=theme,
-                label=f"Theme: {theme}",
             )
         )
 
@@ -100,7 +88,6 @@ def resolve_source_search_filters(
     return ResolvedSourceSearchFilters(
         country=country,
         language=language,
-        themes=themes,
         company_id=explicit_company_id,
         author_id=explicit_author_id,
         published_from=resolved_published_from,
@@ -132,15 +119,3 @@ def normalize_source_search_language(value: str | None) -> str | None:
         return None
     normalized = value.strip().casefold()[:3]
     return normalized or None
-
-
-def normalize_source_search_themes(value: str | None) -> list[str]:
-    if value is None:
-        return []
-    return sorted(
-        {
-            part.strip().casefold()
-            for part in value.split(",")
-            if part.strip()
-        }
-    )

@@ -67,11 +67,11 @@ def test_internal_router_serves_source_search(content_app) -> None:
     assert response.json()["offset"] == 6
 
 
-def test_internal_source_search_rejects_removed_language_filter(content_app) -> None:
+def test_internal_source_search_rejects_removed_theme_filter(content_app) -> None:
     with TestClient(content_app) as client:
         response = client.get(
             "/internal/content/sources/search",
-            params={"q": "finance", "language": "fr"},
+            params={"q": "finance", "theme": "politics"},
             headers={"x-manifeed-internal-token": "x" * 32},
         )
 
